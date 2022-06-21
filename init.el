@@ -28,6 +28,13 @@
 (setq inhibit-startup-screen t)
 (setq-default cursor-type 'bar)
 (defalias 'yes-or-no-p 'y-or-n-p)
+(global-hl-line-mode 1)
+(set-face-foreground 'hl-line nil)
+
+;; impove general functionaliy
+;; disable *.~undo-tree~" pollution
+(setq undo-tree-auto-save-history nil)
+
 
 ;; improve mac keyboard
 (setq mac-command-modifier 'meta)
@@ -62,7 +69,6 @@
 (setq make-backup-files nil)
 
 ;; font
-;; (add-to-list 'default-frame-alist '(font . "Monospace-10"))
 (set-frame-font "Monego Nerd Font Fix 14" nil t)
 
 ;; remember cursor position
@@ -86,10 +92,37 @@
   (eval-when-compile (require 'use-package)))
 (setq use-package-always-ensure t)
 
+(require 'quelpa-use-package)
+(unless (package-installed-p 'quelpa)
+  (with-temp-buffer
+    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+    (eval-buffer)
+    (quelpa-self-upgrade)))
+
 ;; theme
 (use-package noctilux-theme
   :defer t
   :init (load-theme 'noctilux t))
+
+;; treemacs
+;; TODO: testing out
+;; If not good, or adds complexity. Replace with
+;; https://github.com/jojojames/ibuffer-sidebar
+;; https://github.com/jojojames/dired-sidebar
+(use-package treemacs
+  :demand t
+  :config
+	(setq treemacs-follow-after-init t
+				treemacs-is-never-other-window t
+				treemacs-width 20)
+        (treemacs-follow-mode t)
+        (treemacs-filewatch-mode t)
+        (treemacs-git-mode 'simple)
+	(treemacs-fringe-indicator-mode t)
+  :hook (after-init . treemacs)
+  :bind
+        (:map global-map
+        ("C-M-t"   . treemacs)))
 
 ;; magit
 (use-package magit :ensure t)
@@ -97,15 +130,15 @@
 ;; git-gutter
 ;; TODO: Trying it out
 (use-package git-gutter+
-  :bind
-  (("C-x p" . git-gutter+-previous-hunk)
-   ("C-x n" . git-gutter+-next-hunk)
-   ("C-x v s" . git-gutter+-stage-hunks)
-   ("C-x v =" . git-gutter+-show-hunk)
-   ("C-x v r" . git-gutter+-revert-hunks)
-   ("C-x v c" . git-gutter+-commit)
-   ("C-x v C" . git-gutter+-stage-and-commit)
-   )
+  ;; :bind
+  ;; (("C-x p" . git-gutter+-previous-hunk)
+  ;;  ("C-x n" . git-gutter+-next-hunk)
+  ;;  ("C-x v s" . git-gutter+-stage-hunks)
+  ;;  ("C-x v =" . git-gutter+-show-hunk)
+  ;;  ("C-x v r" . git-gutter+-revert-hunks)
+  ;;  ("C-x v c" . git-gutter+-commit)
+  ;;  ("C-x v C" . git-gutter+-stage-and-commit)
+  ;;  )
   :config
   (setq git-gutter+-added-sign "|"
 	git-gutter+-modified-sign "|")
@@ -127,15 +160,36 @@
   (vterm-toggle-hide-method 'reset-window-configration)
   :bind (("C-c t" . #'vterm-toggle)))
 
-;; eglot
-(use-package eglot
-  :ensure t
-  :bind
-  (("C-c r" . eglot-rename)
-   ("C-c h" . eldoc))
-  :hook ((python-mode . eglot-ensure)
-	 (go-mode . eglot-ensure)
-	 (bash-mode . eglot-ensure)))
+;; Might be needed for the eglot function
+(use-package js2-mode
+  :ensure t)
+
+;; This is required! for LSP and shitty eglot
+(setq exec-path (append exec-path '("~/.nvm/versions/node/v16.13.2/bin")))
+
+
+;; lsp emergency transplant
+(use-package lsp-ui :ensure t)
+(use-package yasnippet-snippets :ensure t)
+(use-package yasnippet :ensure t)
+(use-package lsp-mode :ensure t)
+(use-package tide :ensure t)
+
+;; lsp shitty configs
+(yas-global-mode)
+(setq lsp-completion-provider :capf)
+(setq lsp-idle-delay 0.500)
+(setq lsp-log-io nil)
+
+;; Annoying stuff
+(setq lsp-enable-links t)
+(setq lsp-signature-render-documentation t)
+(setq lsp-headerline-breadcrumb-enable t)
+(setq lsp-ui-doc-enable t)
+(setq lsp-completion-enable-additional-text-edit t)
+
+(setq lsp-ui-sideline-show-diagnostics t)
+
 
 ;; load env vars
 (use-package load-env-vars)
@@ -178,6 +232,13 @@
 (use-package company
   :init
   (global-company-mode))
+(setq company-tooltip-align-annotations t)
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay 1))
 
 ;; consult
 (use-package consult
@@ -218,25 +279,29 @@
   ;; Tweak the register preview window.
   ;; This adds thin lines, sorting and hides the mode line of the window.
   ;; Might not need this
-  (advice-add #'register-preview :override #'consult-register-window)
+  ;; (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref))
 
 ;; consult projectile
+;; This is a shitty package
 (use-package consult-projectile
   :ensure t
   :after consult
   )
 
 ;; formatter
+;; TODO: not working
+;; Failed to run prettier: Searching for program: No such file or directory, prettier
 (use-package apheleia
   :ensure t
   :config (apheleia-global-mode t))
 
 ;; tree-sitter
 ;; TODO: Testing this out
+;; Add this command: treemacs-project-follow-mode
 (use-package tree-sitter
   :ensure t
   ;; activate tree-sitter on any buffer containing code for which it has a parser available
@@ -249,6 +314,40 @@
   :ensure t
   :after tree-sitter)
 
+(use-package flycheck :ensure t)
+
+(use-package web-mode
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
+
+  (add-hook 'web-mode-hook
+	    (lambda ()
+	      (when (string-equal "tsx" (file-name-extension buffer-file-name))
+		(setup-tide-mode))))
+
+  (add-hook 'web-mode-hook
+	    (lambda ()
+	      (when (string-equal "ts" (file-name-extension buffer-file-name))
+		(setup-tide-mode))))
+
+  )
+
+(defun setup-tide-mode ()
+  (interactive)
+  (tide-setup)
+  (flycheck-mode +1)
+  (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  (eldoc-mode +1)
+  ;; (typescript-mode +1)
+  (tide-hl-identifier-mode +1)
+  ;; company is an optional dependency. You have to
+  ;; install it separately via package-install
+  ;; `M-x package-install [ret] company`
+  (company-mode +1))
+
+
 ;; typescript mode
 (use-package typescript-mode
   :after tree-sitter
@@ -259,10 +358,17 @@
     "TypeScript TSX")
 
   ;; use our derived mode for tsx files
-  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
+  (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
+  (add-hook 'typescript-mode-hook 'setup-tide-mode)
   ;; by default, typescript-mode is mapped to the treesitter typescript parser
   ;; use our derived mode to map both .tsx AND .ts -> typescriptreact-mode -> treesitter tsx
+  ;; NOTE REMOVE ALL TYEPSCRIPTREACT BULLSHIT
   (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
+
+
+;; enable typescript - tslint checker
+(flycheck-add-mode 'typescript-tslint 'web-mode)
+(flycheck-add-mode 'typescript-tslint 'typescript-mode)
 
 ;; tsi - not yet in melpa
 ;; Tree-sitter based indentation for TypeScript, JSON and (S)CSS.
@@ -288,13 +394,15 @@
  ;; If there is more than one, they won't work right.
  '(doc-view-continuous t)
  '(package-selected-packages
-   '(centaur-tabs consult vterm-toggle vterm project-x apheleia git-gutter-fringe+ git-gutter+ eglot spacemacs-theme tree-sitter-langs tree-sitter load-env-vars go-mode orderless company vertico wakatime-mode auto-virtualenv rainbow-delimiters smartparens use-package))
+   '(quelpa-use-package centaur-tabs consult vterm-toggle vterm project-x apheleia git-gutter-fringe+ git-gutter+ eglot spacemacs-theme tree-sitter-langs tree-sitter load-env-vars go-mode orderless company vertico wakatime-mode auto-virtualenv rainbow-delimiters smartparens use-package))
+ '(tsi-typescript-indent-offset 4)
  '(wakatime-cli-path "/usr/bin/wakatime-cli"))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(vertico-current ((t (:inherit highlight :extend t :background "#404040" :foreground "#aaffaa"))))
+ '(vertico-group-title ((t (:foreground "#ccaaff" :slant italic)))))
 
 ;;; init.el ends here
