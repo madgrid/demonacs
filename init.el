@@ -26,7 +26,7 @@
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 (setq inhibit-startup-screen t)
-(setq-default cursor-type 'bar)
+(setq-default cursor-type 'box) ;;bar
 (defalias 'yes-or-no-p 'y-or-n-p)
 (global-hl-line-mode 1)
 (set-face-foreground 'hl-line nil)
@@ -268,7 +268,7 @@
  	 ("M-p f" . consult-projectile-find-file)
 	 ("M-p b" . consult-projectile-switch-to-buffer)
 	 ("M-p t t" . treemacs)
-	 ("M-p t f" . treemacs-project-follow-mode)
+	 ("M-p t d" . treemacs-select-directory)
          ;; Isearch integration
          ("M-s e" . consult-isearch-history))
 
